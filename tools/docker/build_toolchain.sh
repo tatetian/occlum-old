@@ -46,7 +46,7 @@ cd ..
 
 # Link Linux headers
 ln -s /usr/include/linux ${INSTALL_DIR}/include/linux
-ln -s /usr/include/asm ${INSTALL_DIR}/include/asm
+ln -s /usr/include/x86_64-linux-gnu/asm ${INSTALL_DIR}/include/asm
 ln -s /usr/include/asm-generic ${INSTALL_DIR}/include/asm-generic
 
 # Build libunwind
