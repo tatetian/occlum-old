@@ -12,7 +12,7 @@ lazy_static! {
     /// The root of file system
     pub static ref ROOT_INODE: Arc<INode> = {
         // Mount SEFS at /
-        let device = Box::new(SgxStorage::new("sefs"));
+        let device = Box::new(SgxStorage::new("sefs", false));
         let sefs = SEFS::open(device, &time::OcclumTimeProvider)
             .expect("failed to open SEFS");
         let rootfs = MountFS::new(sefs);

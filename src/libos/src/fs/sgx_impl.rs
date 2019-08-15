@@ -11,14 +11,16 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct SgxStorage {
     path: PathBuf,
+    integrity_only: bool,
     file_cache: Mutex<BTreeMap<usize, LockedFile>>,
 }
 
 impl SgxStorage {
-    pub fn new(path: impl AsRef<Path>) -> Self {
+    pub fn new(path: impl AsRef<Path>, integrity_only: bool) -> Self {
         //        assert!(path.as_ref().is_dir());
         SgxStorage {
             path: path.as_ref().to_path_buf(),
+            integrity_only: integrity_only,
             file_cache: Mutex::new(BTreeMap::new()),
         }
     }
@@ -51,13 +53,19 @@ impl Storage for SgxStorage {
         let locked_file = self.get(file_id, |this| {
             let mut path = this.path.to_path_buf();
             path.push(format!("{}", file_id));
-            // TODO: key
-            let key = [0u8; 16];
-            let file = OpenOptions::new()
-                .read(true)
-                .update(true)
-                .open_ex(path, &key)
-                .expect("failed to open SgxFile");
+            let options = {
+                let mut options = OpenOptions::new();
+                options.read(true).update(true);
+                options
+            };
+            let file = {
+                if !self.integrity_only {
+                    options.open(path)
+                } else {
+                    options.open_integrity_only(path)
+                }
+                .expect("failed to open SgxFile")
+            };
             LockedFile(Arc::new(Mutex::new(file)))
         });
         Ok(Box::new(locked_file))
@@ -67,13 +75,19 @@ impl Storage for SgxStorage {
         let locked_file = self.get(file_id, |this| {
             let mut path = this.path.to_path_buf();
             path.push(format!("{}", file_id));
-            // TODO: key
-            let key = [0u8; 16];
-            let file = OpenOptions::new()
-                .write(true)
-                .update(true)
-                .open_ex(path, &key)
-                .expect("failed to create SgxFile");
+            let options = {
+                let mut options = OpenOptions::new();
+                options.write(true).update(true);
+                options
+            };
+            let file = {
+                if !self.integrity_only {
+                    options.open(path)
+                } else {
+                    options.open_integrity_only(path)
+                }
+                .expect("failed to open SgxFile")
+            };
             LockedFile(Arc::new(Mutex::new(file)))
         });
         Ok(Box::new(locked_file))
