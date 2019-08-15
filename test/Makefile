@@ -44,7 +44,7 @@ $(BUILD_TARGETS): %:
 	@$(ECHO) "$(GREEN)DONE$(NO_COLOR)"
 
 sefs:
-	@$(RM) -rf $(SEFS_PATH)
+	@mkdir -p $(FS_PATH)/bin/
 	@mkdir -p $(FS_PATH)/lib/
 	@cp /lib/ld-musl-x86_64.so.1 $(FS_PATH)/lib/
 	@cp /usr/local/occlum/lib/libc++.so.1 $(FS_PATH)/lib/
@@ -60,16 +60,14 @@ sefs:
 libocclum.signed.so: Occlum.json Enclave_config.xml Enclave_private.pem
 	@$(PROJECT_DIR)/tools/bin/build-enclave Occlum.json Enclave_config.xml Enclave_private.pem
 
+
 #############################################################################
 # Test targets
 #############################################################################
 
 test: build $(TEST_TARGETS)
 
-pal: $(PROJECT_DIR)/src/pal/pal
-	@cp $< pal
-
-$(TEST_TARGETS): test-%: % pal libocclum.signed.so
+$(TEST_TARGETS): test-%: % pal
 	@$(ECHO) "$(CYAN)RUN TEST => $<$(NO_COLOR)"
 	@$(MAKE) --no-print-directory -C $< test ; \
 		if [ $$? -eq 0 ] ; then \
@@ -77,6 +75,13 @@ $(TEST_TARGETS): test-%: % pal libocclum.signed.so
 		else \
 			$(ECHO) "$(RED)FAILED$(NO_COLOR)" ; \
 		fi ;
+
+pal: $(PROJECT_DIR)/src/pal/pal
+	@cp $< pal
+
+$(PROJECT_DIR)/src/pal/pal:
+	@cd $(PROJECT_DIR)/src/pal && make
+
 
 #############################################################################
 # Benchmark targets
