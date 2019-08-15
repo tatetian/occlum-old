@@ -11,12 +11,18 @@ use super::*;
 lazy_static! {
     /// The root of file system
     pub static ref ROOT_INODE: Arc<INode> = {
-        // Mount SEFS at /
-        let device = Box::new(SgxStorage::new("sefs", false));
-        let sefs = SEFS::open(device, &time::OcclumTimeProvider)
-            .expect("failed to open SEFS");
-        let rootfs = MountFS::new(sefs);
-        let root = rootfs.root_inode();
+        fn open_or_create_root_fs() -> Result<Arc<MountFS>, Error> {
+            let sefs = {
+                SEFS::open(Box::new(SgxStorage::new("sefs/root", false)),
+                    &time::OcclumTimeProvider)
+            }
+            .or_else(|_| {
+                SEFS::create(Box::new(SgxStorage::new("sefs/root", false)),
+                    &time::OcclumTimeProvider)
+            })?;
+            let rootfs = MountFS::new(sefs);
+            Ok(rootfs)
+        }
 
         fn mount_default_fs(fs: Arc<dyn FileSystem>, root: &MNode, mount_at: &str) -> Result<(), Error> {
             let mount_dir = match root.find(false, mount_at) {
@@ -33,6 +39,26 @@ lazy_static! {
             mount_dir.mount(fs);
             Ok(())
         }
+
+        let rootfs = open_or_create_root_fs()
+            .expect("failed to create or open SEFS for /");
+        let root = rootfs.root_inode();
+
+        let bin_sefs = {
+            let device = Box::new(SgxStorage::new("sefs/bin", true));
+            SEFS::open(device, &time::OcclumTimeProvider)
+                .expect("failed to open SEFS for /bin")
+        };
+        mount_default_fs(bin_sefs, &root, "bin")
+            .expect("failed to mount SEFS at /bin");
+
+        let lib_sefs = {
+            let device = Box::new(SgxStorage::new("sefs/lib", true));
+            SEFS::open(device, &time::OcclumTimeProvider)
+                .expect("failed to open SEFS for /lib")
+        };
+        mount_default_fs(lib_sefs, &root, "lib")
+            .expect("failed to mount SEFS at /lib");
 
         let hostfs = HostFS::new(".");
         mount_default_fs(hostfs, &root, "host")

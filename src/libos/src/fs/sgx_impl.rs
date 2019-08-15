@@ -28,22 +28,22 @@ impl SgxStorage {
     /// It lookups cache first, if miss, then call `open_fn` to open one,
     /// and add it to cache before return.
     #[cfg(feature = "sgx_file_cache")]
-    fn get(&self, file_id: usize, open_fn: impl FnOnce(&Self) -> LockedFile) -> LockedFile {
+    fn get(&self, file_id: usize, open_fn: impl FnOnce(&Self) -> DevResult<LockedFile>) -> DevResult<LockedFile> {
         // query cache
         let mut caches = self.file_cache.lock().unwrap();
         if let Some(locked_file) = caches.get(&file_id) {
             // hit, return
-            return locked_file.clone();
+            return Ok(locked_file.clone());
         }
         // miss, open one
-        let locked_file = open_fn(self);
+        let locked_file = open_fn(self)?;
         // add to cache
         caches.insert(file_id, locked_file.clone());
-        locked_file
+        Ok(locked_file)
     }
     /// Get file by `file_id` without cache.
     #[cfg(not(feature = "sgx_file_cache"))]
-    fn get(&self, file_id: usize, open_fn: impl FnOnce(&Self) -> LockedFile) -> LockedFile {
+    fn get(&self, file_id: usize, open_fn: impl FnOnce(&Self) -> DevResult<LockedFile>) -> LockedFile {
         open_fn(self)
     }
 }
@@ -59,15 +59,18 @@ impl Storage for SgxStorage {
                 options
             };
             let file = {
-                if !self.integrity_only {
+                let open_res = if !self.integrity_only {
                     options.open(path)
                 } else {
                     options.open_integrity_only(path)
+                };
+                if open_res.is_err() {
+                    return Err(DeviceError);
                 }
-                .expect("failed to open SgxFile")
+                open_res.unwrap()
             };
-            LockedFile(Arc::new(Mutex::new(file)))
-        });
+            Ok(LockedFile(Arc::new(Mutex::new(file))))
+        })?;
         Ok(Box::new(locked_file))
     }
 
@@ -81,15 +84,18 @@ impl Storage for SgxStorage {
                 options
             };
             let file = {
-                if !self.integrity_only {
+                let open_res = if !self.integrity_only {
                     options.open(path)
                 } else {
                     options.open_integrity_only(path)
+                };
+                if open_res.is_err() {
+                    return Err(DeviceError);
                 }
-                .expect("failed to open SgxFile")
+                open_res.unwrap()
             };
-            LockedFile(Arc::new(Mutex::new(file)))
-        });
+            Ok(LockedFile(Arc::new(Mutex::new(file))))
+        })?;
         Ok(Box::new(locked_file))
     }
 

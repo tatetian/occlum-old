@@ -15,7 +15,7 @@ BUILD_TARGETS := $(TEST_DEPS) $(TESTS) $(BENCHES)
 TEST_TARGETS := $(TESTS:%=test-%)
 BENCH_TARGETS := $(BENCHES:%=bench-%)
 CLEAN_TARGETS := $(BUILD_TARGETS:%=clean-%)
-.PHONY: all build test clean sefs $(BUILD_TARGETS) $(TEST_TARGETS) $(BENCH_TARGETS) $(CLEAN_TARGETS)
+.PHONY: all build test clean sefs root-sefs bin-sefs lib-sefs $(BUILD_TARGETS) $(TEST_TARGETS) $(BENCH_TARGETS) $(CLEAN_TARGETS)
 
 # Use echo program instead of built-in echo command in shell. This ensures
 # that echo can recognize escaped sequences (with -e argument) regardless of
@@ -43,17 +43,38 @@ $(BUILD_TARGETS): %:
 	@$(MAKE) --no-print-directory -C $@
 	@$(ECHO) "$(GREEN)DONE$(NO_COLOR)"
 
-sefs:
+sefs: root-sefs bin-sefs lib-sefs
+
+root-sefs:
+	@mkdir -p $(SEFS_PATH)/root/
+	@echo "SEFS => $@"
+
+bin-sefs:
 	@mkdir -p $(FS_PATH)/bin/
+	@for test in $(TESTS) ; do \
+		cp "$$test/$$test" $(FS_PATH)/bin/ ; \
+	done
+	@mkdir -p $(SEFS_PATH)
+	@cd $(PROJECT_DIR)/deps/sefs/sefs-fuse/bin/ && \
+		./app \
+			--integrity-only \
+			$(CUR_DIR)/$(SEFS_PATH)/bin \
+			$(CUR_DIR)/$(FS_PATH)/bin \
+			zip
+	@echo "SEFS => $@"
+
+lib-sefs:
 	@mkdir -p $(FS_PATH)/lib/
 	@cp /lib/ld-musl-x86_64.so.1 $(FS_PATH)/lib/
 	@cp /usr/local/occlum/lib/libc++.so.1 $(FS_PATH)/lib/
 	@cp /usr/local/occlum/lib/libc++abi.so.1 $(FS_PATH)/lib/
 	@cp /usr/local/occlum/lib/libunwind.so.1 $(FS_PATH)/lib/
+	@mkdir -p $(SEFS_PATH)
 	@cd $(PROJECT_DIR)/deps/sefs/sefs-fuse/bin/ && \
 		./app \
-			$(CUR_DIR)/$(SEFS_PATH) \
-			$(CUR_DIR)/$(FS_PATH) \
+			--integrity-only \
+			$(CUR_DIR)/$(SEFS_PATH)/lib \
+			$(CUR_DIR)/$(FS_PATH)/lib \
 			zip
 	@echo "SEFS => $@"
 
