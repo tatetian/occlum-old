@@ -7,21 +7,40 @@ use std::fmt;
 use super::hostfs::HostFS;
 use super::sgx_impl::SgxStorage;
 use super::*;
+use config::{ConfigMount};
 
 lazy_static! {
     /// The root of file system
     pub static ref ROOT_INODE: Arc<INode> = {
-        fn open_or_create_root_fs() -> Result<Arc<MountFS>, Error> {
-            let sefs = {
-                SEFS::open(Box::new(SgxStorage::new("sefs/root", false)),
+        fn open_or_create_root_fs(mount_config: &Vec<ConfigMount>) -> Result<Arc<MountFS>, Error> {
+            let root_sefs_source = {
+                let root_mount_config = mount_config
+                    .iter()
+                    .find(|m| m.target == "/")
+                    .ok_or_else(|| Error::new(Errno::ENOENT, "The mount point at / is not specified"))?;
+
+                if root_mount_config.type_ != "sefs" {
+                    return errno!(EINVAL, "The mount point at / must be SEFS");
+                }
+                if root_mount_config.options.integrity_only {
+                    return errno!(EINVAL, "The root SEFS at / must be encrypted, i.e., integrity-only is not enough");
+                }
+                if root_mount_config.source.is_none() {
+                    return errno!(EINVAL, "The root SEFS must be given a source path (on host)");
+                }
+                root_mount_config.source.as_ref().unwrap()
+            };
+
+            let root_sefs = {
+                SEFS::open(Box::new(SgxStorage::new(root_sefs_source, false)),
                     &time::OcclumTimeProvider)
             }
             .or_else(|_| {
-                SEFS::create(Box::new(SgxStorage::new("sefs/root", false)),
+                SEFS::create(Box::new(SgxStorage::new(root_sefs_source, false)),
                     &time::OcclumTimeProvider)
             })?;
-            let rootfs = MountFS::new(sefs);
-            Ok(rootfs)
+            let root_mountable_sefs = MountFS::new(root_sefs);
+            Ok(root_mountable_sefs)
         }
 
         fn mount_default_fs(fs: Arc<dyn FileSystem>, root: &MNode, mount_at: &str) -> Result<(), Error> {
@@ -40,7 +59,9 @@ lazy_static! {
             Ok(())
         }
 
-        let rootfs = open_or_create_root_fs()
+        let mount_config = &config::LIBOS_CONFIG.mount;
+
+        let rootfs = open_or_create_root_fs(mount_config)
             .expect("failed to create or open SEFS for /");
         let root = rootfs.root_inode();
 
