@@ -29,6 +29,8 @@ NO_COLOR := \033[0m
 
 FS_PATH := fs
 SEFS_PATH := sefs
+BIN_SEFS_ROOT_FILE := $(SEFS_PATH)/bin/0
+LIB_SEFS_ROOT_FILE := $(SEFS_PATH)/lib/0
 
 #############################################################################
 # Build targets
@@ -54,6 +56,7 @@ bin-sefs:
 	@for test in $(TESTS) ; do \
 		cp "$$test/$$test" $(FS_PATH)/bin/ ; \
 	done
+	@rm -rf $(SEFS_PATH)/bin
 	@mkdir -p $(SEFS_PATH)
 	@cd $(PROJECT_DIR)/deps/sefs/sefs-fuse/bin/ && \
 		./app \
@@ -69,6 +72,7 @@ lib-sefs:
 	@cp /usr/local/occlum/lib/libc++.so.1 $(FS_PATH)/lib/
 	@cp /usr/local/occlum/lib/libc++abi.so.1 $(FS_PATH)/lib/
 	@cp /usr/local/occlum/lib/libunwind.so.1 $(FS_PATH)/lib/
+	@rm -rf $(SEFS_PATH)/lib
 	@mkdir -p $(SEFS_PATH)
 	@cd $(PROJECT_DIR)/deps/sefs/sefs-fuse/bin/ && \
 		./app \
@@ -81,6 +85,12 @@ lib-sefs:
 libocclum.signed.so: Occlum.json Enclave_config.xml Enclave_private.pem
 	@$(PROJECT_DIR)/tools/bin/build-enclave Occlum.json Enclave_config.xml Enclave_private.pem
 
+Occlum.json: Occlum.json.sh $(BIN_SEFS_ROOT_FILE) $(LIB_SEFS_ROOT_FILE)
+	@./Occlum.json.sh \
+		`$(PROJECT_DIR)/tools/bin/protect-integrity show-mac $(BIN_SEFS_ROOT_FILE) \
+		`$(PROJECT_DIR)/tools/bin/protect-integrity show-mac $(LIB_SEFS_ROOT_FILE) \
+		> $@
+	@echo "GEN => $@"
 
 #############################################################################
 # Test targets
@@ -124,7 +134,7 @@ $(BENCH_TARGETS): bench-%: % pal libocclum.signed.so
 #############################################################################
 
 clean: $(CLEAN_TARGETS)
-	@$(RM) -f pal libocclum.signed.so Occlum.json.protected
+	@$(RM) -f pal libocclum.signed.so Occlum.json.protected Occlum.json
 	@$(RM) -rf $(FS_PATH) $(SEFS_PATH)
 
 $(CLEAN_TARGETS): clean-%:
