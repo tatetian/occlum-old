@@ -86,8 +86,8 @@ cmd_build() {
     "$occlum_dir/build/bin/occlum-gen-default-occlum-json"\
         `"$occlum_dir/build/bin/occlum-protect-integrity" show-mac "$context_dir/build/mount/__ROOT/0"` \
         > "Occlum_default.json"
-    jq -s '.[0] + .[1]' "../../Occlum.json" "Occlum_new.json"\
-        > "Occlum_default.json"
+    jq -s '.[0] + .[1]' "../../Occlum.json" "Occlum_default.json"\
+        > "Occlum.json"
     rm -f "Occlum_default.json"
     "$occlum_dir/build/bin/occlum-protect-integrity" protect Occlum.json
 
