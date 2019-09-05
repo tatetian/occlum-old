@@ -15,10 +15,10 @@ CXX_OBJS := $(addprefix $(BUILD_DIR)/test/obj/$(TEST_NAME)/,$(CXX_SRCS:%.cc=%.o)
 
 ALL_BUILD_SUBDIRS := $(sort $(patsubst %/,%,$(dir $(BIN) $(C_OBJS) $(CXX_OBJS))))
 
-CC := /opt/occlum/toolchains/gcc/bin/occlum-gcc
-CXX := /opt/occlum/toolchains/gcc/bin/occlum-g++
+CC := occlum-gcc
+CXX := occlum-g++
 
-C_FLAGS = -Wall -I../include -O2 -fPIC $(EXTRA_C_FLAGS)
+C_FLAGS = -Wall -Wno-return-local-addr -I../include -O2 -fPIC $(EXTRA_C_FLAGS)
 LINK_FLAGS = $(C_FLAGS) -pie $(EXTRA_LINK_FLAGS)
 
 .PHONY: all test test-native clean

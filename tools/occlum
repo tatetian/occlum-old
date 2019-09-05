@@ -63,7 +63,7 @@ cmd_init() {
     mkdir -p image/host
     mkdir -p image/tmp
 
-    local occlum_gcc_lib=/usr/local/occlum/gcc/x86_64-linux-musl/lib
+    local occlum_gcc_lib=/usr/local/occlum/x86_64-linux-musl/lib
     cp \
         "$occlum_gcc_lib/libc.so" \
         "$occlum_gcc_lib/libstdc++.so.6" \
