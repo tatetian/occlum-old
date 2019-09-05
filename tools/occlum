@@ -23,22 +23,6 @@ get_conf_user_space_size() {
         python -c "import sys, json; print json.load(sys.stdin)['vm']['user_space_size']"
 }
 
-get_conf_default_stack_size() {
-    cat "$working_dir/Occlum.json" | \
-        python -c "import sys, json; print json.load(sys.stdin)['process']['default_stack_size']"
-}
-
-get_conf_default_heap_size() {
-    cat "$working_dir/Occlum.json" | \
-        python -c "import sys, json; print json.load(sys.stdin)['process']['default_heap_size']"
-}
-
-get_conf_default_mmap_size() {
-    cat "$working_dir/Occlum.json" | \
-        python -c "import sys, json; print json.load(sys.stdin)['process']['default_mmap_size']"
-}
-
-
 get_occlum_conf_file_mac() {
     "$occlum_dir/build/bin/occlum-protect-integrity" show-mac "$context_dir/build/Occlum.json.protected"
 }
@@ -98,17 +82,13 @@ cmd_build() {
             "$working_dir/image" \
             zip
 
-    export OCCLUM_CONF_ROOT_FS_MAC=`"$occlum_dir/build/bin/occlum-protect-integrity" show-mac "$context_dir/build/mount/__ROOT/0"`
-    export OCCLUM_CONF_USER_SPACE_SIZE=`get_conf_user_space_size`
-    export OCCLUM_CONF_DEFAULT_STACK_SIZE=`get_conf_default_stack_size`
-    export OCCLUM_CONF_DEFAULT_HEAP_SIZE=`get_conf_default_heap_size`
-    export OCCLUM_CONF_DEFAULT_MMAP_SIZE=`get_conf_default_mmap_size`
     cd "$context_dir/build"
     "$occlum_dir/build/bin/occlum-gen-default-occlum-json"\
-        > "Occlum_new.json"
+        `"$occlum_dir/build/bin/occlum-protect-integrity" show-mac "$context_dir/build/mount/__ROOT/0"` \
+        > "Occlum_default.json"
     jq -s '.[0] + .[1]' "../../Occlum.json" "Occlum_new.json"\
-        > "Occlum.json"
-    rm -f "Occlum_new.json"
+        > "Occlum_default.json"
+    rm -f "Occlum_default.json"
     "$occlum_dir/build/bin/occlum-protect-integrity" protect Occlum.json
 
     export OCCLUM_BUILTIN_CONF_FILE_MAC=`get_occlum_conf_file_mac`

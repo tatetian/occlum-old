@@ -1,13 +1,14 @@
 #!/bin/bash
+OCCLUM_CONF_ROOT_FS_MAC=$1
 cat <<EOF
 {
     "vm": {
-        "user_space_size": "$OCCLUM_CONF_USER_SPACE_SIZE"
+        "user_space_size": "128MB"
     },
     "process": {
-        "default_stack_size": "$OCCLUM_CONF_DEFAULT_STACK_SIZE",
-        "default_heap_size": "$OCCLUM_CONF_DEFAULT_HEAP_SIZE",
-        "default_mmap_size": "$OCCLUM_CONF_DEFAULT_MMAP_SIZE"
+        "default_stack_size": "4MB",
+        "default_heap_size": "8MB",
+        "default_mmap_size": "16MB"
     },
     "mount": [
         {
