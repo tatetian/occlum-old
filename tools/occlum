@@ -63,12 +63,14 @@ cmd_init() {
     mkdir -p image/host
     mkdir -p image/tmp
 
+    local occlum_gcc_lib=/usr/local/occlum/gcc/x86_64-linux-musl/lib
     cp \
-        /lib/ld-musl-x86_64.so.1 \
-        /usr/local/occlum/lib/libc++.so.1 \
-        /usr/local/occlum/lib/libc++abi.so.1 \
-        /usr/local/occlum/lib/libunwind.so.1 \
+        "$occlum_gcc_lib/libc.so" \
+        "$occlum_gcc_lib/libstdc++.so.6" \
+        "$occlum_gcc_lib/libgcc_s.so.1" \
+        "$occlum_gcc_lib/libgomp.so.1" \
         image/lib/
+    cp "/lib/ld-musl-x86_64.so.1" image/lib/
 
     cp "$occlum_dir"/etc/template/* "$working_dir"/
 
