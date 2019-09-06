@@ -51,4 +51,5 @@ rm -rf ${BUILD_DIR}
 ln -sf ${INSTALL_DIR}/bin/${TARGET}-gcc ${INSTALL_DIR}/bin/occlum-gcc
 ln -sf ${INSTALL_DIR}/bin/${TARGET}-g++ ${INSTALL_DIR}/bin/occlum-g++
 ln -sf ${INSTALL_DIR}/bin/${TARGET}-ld ${INSTALL_DIR}/bin/occlum-ld
+ln -sf ${INSTALL_DIR}/x86_64-linux-musl/lib/libc.so /lib/ld-musl-x86_64.so.1
 ln -sf ${INSTALL_DIR} /usr/local/occlum
