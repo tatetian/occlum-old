@@ -16,19 +16,19 @@ pub struct OpenOptions {
 }
 
 impl File for INodeFile {
-    fn read(&self, buf: &mut [u8]) -> Result<usize, Error> {
+    fn read(&self, buf: &mut [u8]) -> Result<usize> {
         if !self.options.read {
-            return errno!(EBADF, "File not readable");
+            return_errno!(EBADF, "File not readable");
         }
         let mut offset = self.offset.lock().unwrap();
-        let len = self.inode.read_at(*offset, buf)?;
+        let len = self.inode.read_at(*offset, buf).map_err(|e| errno!(e))?;
         *offset += len;
         Ok(len)
     }
 
-    fn write(&self, buf: &[u8]) -> Result<usize, Error> {
+    fn write(&self, buf: &[u8]) -> Result<usize> {
         if !self.options.write {
-            return errno!(EBADF, "File not writable");
+            return_errno!(EBADF, "File not writable");
         }
         let mut offset = self.offset.lock().unwrap();
         if self.options.append {
@@ -40,25 +40,25 @@ impl File for INodeFile {
         Ok(len)
     }
 
-    fn read_at(&self, offset: usize, buf: &mut [u8]) -> Result<usize, Error> {
+    fn read_at(&self, offset: usize, buf: &mut [u8]) -> Result<usize> {
         if !self.options.read {
-            return errno!(EBADF, "File not readable");
+            return_errno!(EBADF, "File not readable");
         }
         let len = self.inode.read_at(offset, buf)?;
         Ok(len)
     }
 
-    fn write_at(&self, offset: usize, buf: &[u8]) -> Result<usize, Error> {
+    fn write_at(&self, offset: usize, buf: &[u8]) -> Result<usize> {
         if !self.options.write {
-            return errno!(EBADF, "File not writable");
+            return_errno!(EBADF, "File not writable");
         }
         let len = self.inode.write_at(offset, buf)?;
         Ok(len)
     }
 
-    fn readv(&self, bufs: &mut [&mut [u8]]) -> Result<usize, Error> {
+    fn readv(&self, bufs: &mut [&mut [u8]]) -> Result<usize> {
         if !self.options.read {
-            return errno!(EBADF, "File not readable");
+            return_errno!(EBADF, "File not readable");
         }
         let mut offset = self.offset.lock().unwrap();
         let mut total_len = 0;
@@ -75,9 +75,9 @@ impl File for INodeFile {
         Ok(total_len)
     }
 
-    fn writev(&self, bufs: &[&[u8]]) -> Result<usize, Error> {
+    fn writev(&self, bufs: &[&[u8]]) -> Result<usize> {
         if !self.options.write {
-            return errno!(EBADF, "File not writable");
+            return_errno!(EBADF, "File not writable");
         }
         let mut offset = self.offset.lock().unwrap();
         if self.options.append {
@@ -98,7 +98,7 @@ impl File for INodeFile {
         Ok(total_len)
     }
 
-    fn seek(&self, pos: SeekFrom) -> Result<off_t, Error> {
+    fn seek(&self, pos: SeekFrom) -> Result<off_t> {
         let mut offset = self.offset.lock().unwrap();
         *offset = match pos {
             SeekFrom::Start(off) => off as usize,
@@ -108,32 +108,32 @@ impl File for INodeFile {
         Ok(*offset as i64)
     }
 
-    fn metadata(&self) -> Result<Metadata, Error> {
+    fn metadata(&self) -> Result<Metadata> {
         let metadata = self.inode.metadata()?;
         Ok(metadata)
     }
 
-    fn set_len(&self, len: u64) -> Result<(), Error> {
+    fn set_len(&self, len: u64) -> Result<()> {
         if !self.options.write {
-            return errno!(EBADF, "File not writable. Can't set len.");
+            return_errno!(EBADF, "File not writable. Can't set len.");
         }
         self.inode.resize(len as usize)?;
         Ok(())
     }
 
-    fn sync_all(&self) -> Result<(), Error> {
+    fn sync_all(&self) -> Result<()> {
         self.inode.sync_all()?;
         Ok(())
     }
 
-    fn sync_data(&self) -> Result<(), Error> {
+    fn sync_data(&self) -> Result<()> {
         self.inode.sync_data()?;
         Ok(())
     }
 
-    fn read_entry(&self) -> Result<String, Error> {
+    fn read_entry(&self) -> Result<String> {
         if !self.options.read {
-            return errno!(EBADF, "File not readable. Can't read entry.");
+            return_errno!(EBADF, "File not readable. Can't read entry.");
         }
         let mut offset = self.offset.lock().unwrap();
         let name = self.inode.get_entry(*offset)?;
@@ -147,39 +147,12 @@ impl File for INodeFile {
 }
 
 impl INodeFile {
-    pub fn open(inode: Arc<INode>, options: OpenOptions) -> Result<Self, Error> {
+    pub fn open(inode: Arc<INode>, options: OpenOptions) -> Result<Self> {
         Ok(INodeFile {
             inode,
             offset: SgxMutex::new(0),
             options,
         })
-    }
-}
-
-/// Convert VFS Error to libc error code
-impl From<FsError> for Error {
-    fn from(error: FsError) -> Self {
-        let errno = match error {
-            FsError::NotSupported => ENOSYS,
-            FsError::NotFile => EISDIR,
-            FsError::IsDir => EISDIR,
-            FsError::NotDir => ENOTDIR,
-            FsError::EntryNotFound => ENOENT,
-            FsError::EntryExist => EEXIST,
-            FsError::NotSameFs => EXDEV,
-            FsError::InvalidParam => EINVAL,
-            FsError::NoDeviceSpace => ENOMEM,
-            FsError::DirRemoved => ENOENT,
-            FsError::DirNotEmpty => ENOTEMPTY,
-            FsError::WrongFs => EINVAL,
-            FsError::DeviceError => EIO,
-            FsError::SymLoop => ELOOP,
-            FsError::NoDevice => ENXIO,
-            FsError::IOCTLError => EINVAL,
-            FsError::Again => EAGAIN,
-            FsError::Busy => EBUSY,
-        };
-        Error::new(errno, "")
     }
 }
 
@@ -195,11 +168,11 @@ impl Debug for INodeFile {
 }
 
 pub trait INodeExt {
-    fn read_as_vec(&self) -> Result<Vec<u8>, Error>;
+    fn read_as_vec(&self) -> Result<Vec<u8>>;
 }
 
 impl INodeExt for INode {
-    fn read_as_vec(&self) -> Result<Vec<u8>, Error> {
+    fn read_as_vec(&self) -> Result<Vec<u8>> {
         let size = self.metadata()?.size;
         let mut buf = Vec::with_capacity(size);
         unsafe {

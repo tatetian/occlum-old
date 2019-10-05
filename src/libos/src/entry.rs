@@ -7,10 +7,13 @@ use util::mem_util::from_untrusted::*;
 
 #[no_mangle]
 pub extern "C" fn libos_boot(path_buf: *const c_char, argv: *const *const c_char) -> i32 {
+    // Init the log infrastructure first so that log messages will be printed afterwards
     util::log::init();
+
     let (path, args) = match parse_arguments(path_buf, argv) {
         Ok(path_and_args) => path_and_args,
-        Err(_) => {
+        Err(e) => {
+            error!("invalid arguments for LibOS: {}", e.backtrace());
             return EXIT_STATUS_INTERNAL_ERROR;
         }
     };
@@ -22,7 +25,10 @@ pub extern "C" fn libos_boot(path_buf: *const c_char, argv: *const *const c_char
     panic::catch_unwind(|| {
         backtrace::__rust_begin_short_backtrace(|| match do_boot(&path, &args) {
             Ok(()) => 0,
-            Err(err) => EXIT_STATUS_INTERNAL_ERROR,
+            Err(e) => {
+                error!("failed to boot up LibOS: {}", e.backtrace());
+                EXIT_STATUS_INTERNAL_ERROR
+            }
         })
     })
     .unwrap_or(EXIT_STATUS_INTERNAL_ERROR)
@@ -34,7 +40,10 @@ pub extern "C" fn libos_run(host_tid: i32) -> i32 {
     panic::catch_unwind(|| {
         backtrace::__rust_begin_short_backtrace(|| match do_run(host_tid as pid_t) {
             Ok(exit_status) => exit_status,
-            Err(err) => EXIT_STATUS_INTERNAL_ERROR,
+            Err(e) => {
+                error!("failed to execute a process: {}", e.backtrace());
+                EXIT_STATUS_INTERNAL_ERROR
+            }
         })
     })
     .unwrap_or(EXIT_STATUS_INTERNAL_ERROR)
@@ -51,7 +60,7 @@ const EXIT_STATUS_INTERNAL_ERROR: i32 = 127;
 fn parse_arguments(
     path_buf: *const c_char,
     argv: *const *const c_char,
-) -> Result<(String, Vec<CString>), Error> {
+) -> Result<(String, Vec<CString>)> {
     let path_string = {
         let path_cstring = clone_cstring_safely(path_buf)?;
         path_cstring.to_string_lossy().into_owned()
@@ -59,11 +68,11 @@ fn parse_arguments(
     let program_cstring = {
         let program_osstr = Path::new(&path_string)
             .file_name()
-            .ok_or_else(|| Error::new(Errno::EINVAL, "Invalid path"))?;
+            .ok_or_else(|| errno!(EINVAL, "invalid path"))?;
         let program_str = program_osstr
             .to_str()
-            .ok_or_else(|| Error::new(Errno::EINVAL, "Invalid path"))?;
-        CString::new(program_str).or_else(|_| errno!(EINVAL, "Invalid path"))?
+            .ok_or_else(|| errno!(EINVAL, "invalid path"))?;
+        CString::new(program_str).map_err(|e| errno!(e))?
     };
 
     let mut args = clone_cstrings_safely(argv)?;
@@ -72,7 +81,7 @@ fn parse_arguments(
 }
 
 // TODO: make sure do_boot can only be called once
-fn do_boot(path_str: &str, argv: &Vec<CString>) -> Result<(), Error> {
+fn do_boot(path_str: &str, argv: &Vec<CString>) -> Result<()> {
     //    info!("boot: path: {:?}, argv: {:?}", path_str, argv);
     util::mpx_util::mpx_enable()?;
 
@@ -85,7 +94,7 @@ fn do_boot(path_str: &str, argv: &Vec<CString>) -> Result<(), Error> {
 }
 
 // TODO: make sure do_run() cannot be called after do_boot()
-fn do_run(host_tid: pid_t) -> Result<i32, Error> {
+fn do_run(host_tid: pid_t) -> Result<i32> {
     let exit_status = process::run_task(host_tid)?;
 
     // sync file system

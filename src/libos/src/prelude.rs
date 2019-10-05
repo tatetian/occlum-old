@@ -5,6 +5,9 @@ use std;
 
 //pub use {elf_helper, errno, file, file_table, fs, mm, process, syscall, vma, };
 
+// TODO: use this one-liner to replace the prelude
+pub use std::prelude::v1::*;
+
 pub use std::cell::{Cell, RefCell};
 pub use std::marker::{Send, Sync};
 pub use std::result::Result;
@@ -24,46 +27,10 @@ pub use std::rc::Rc;
 pub use std::string::{String, ToString};
 pub use std::vec::Vec;
 
-pub use errno::Errno;
-pub use errno::Errno::*;
-pub use errno::Error;
-
 macro_rules! debug_trace {
     () => {
         println!("> Line = {}, File = {}", line!(), file!())
     };
-}
-
-macro_rules! errno {
-    ($errno: ident, $msg: expr) => {{
-        error!(
-            "ERROR: {} ({}, line {} in file {})",
-            $errno,
-            $msg,
-            line!(),
-            file!()
-        );
-        Err(Error::new($errno, $msg))
-    }};
-}
-
-// return Err(errno) if libc return -1
-macro_rules! try_libc {
-    ($ret: expr) => {{
-        let ret = unsafe { $ret };
-        if ret == -1 {
-            let errno = unsafe { libc::errno() };
-            // println will cause libc ocall and overwrite errno
-            error!(
-                "ERROR from libc: {} (line {} in file {})",
-                errno,
-                line!(),
-                file!()
-            );
-            return Err(Error::new(Errno::from_errno(errno), "libc error"));
-        }
-        ret
-    }};
 }
 
 pub fn align_up(addr: usize, align: usize) -> usize {
