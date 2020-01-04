@@ -1,18 +1,21 @@
-# Build docker image for occlum
+# Build Occlum Docker image
 
-This folder contains scripts and Dockerfiles for users to build docker images
-for occlum. The images will contain necessary softwares to use and develop
-occlum.
+This folder contains scripts and Dockerfiles for users to build the Docker images
+for occlum.
 
-To start, run:
-```
-./build_image.sh <occlum_name> <OS_name>
-```
+An Occlum Docker image sets up the development environment for 
+Occlum and also gets Occlum preinstalled.
 
-The name of the output image will be:
-```
-occlum/occlum:<occlum_name>-<OS_name>
-```
+Currently, two Linux OS distributions are supported: Ubuntu 16.04 and CentOS 7.2.
 
-Users can specify the <strong>occlum_name</strong> (e.g., lastest and 0.8.0) as they want. 
-The supported <strong>OS_name</strong>s include ubuntu16.04 and centos7.2.
+To build an Occlum Docker image, run the following command
+```
+./build_image.sh <OCCLUM_LABEL> <OS_NAME>
+```
+where `<OCCLUM_LABEL>` is an arbitrary string chosen by the user to 
+describe the version of Occlum preinstalled in the Docker image 
+(e.g., "latest", "0.8.0", and "prerelease") and `<OS_NAME>` is the 
+name of the OS distribution that the Docker image is based on. 
+Currently, `<OS_NAME>` must be one of the following values: 
+`ubuntu16.04` and `centos7.2`. The resulting Docker image will 
+have "occlum/occlum:<OCCLUM_LABEL>-<OS_NAME>" as its label.

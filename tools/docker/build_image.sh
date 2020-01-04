@@ -1,37 +1,42 @@
 #!/bin/bash
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}"  )" >/dev/null 2>&1 && pwd )"
-RED=$(tput setaf 1)
-NC=$(tput sgr0)
+
+report_error() {
+    RED=$(tput setaf 1)
+    NO_COLOR=$(tput sgr0)
+
+    cat <<EOF
+${RED}error:${NO_COLOR} input is invalid
+
+build_image
+Build an Occlum Docker image for a specific OS
+
+USAGE:
+    build_image.sh <OCCLUM_LABEL> <OS_NAME>
+
+<OCCLUM_LABEL>: An arbitrary string chosen by the user to describe the version of Occlum preinstalled in the Docker image, e.g., "latest", "0.8.0", "prerelease", and etc.
+
+<OS_NAME>: The name of the OS distribution that the Docker image is based on. Currently, <OS_NAME> must be one of the following values:
+        ubuntu16.04         Ubuntu 16.04
+        centos7.2           CentOS 7.2
+
+The resulting Docker image will have "occlum/occlum:<OCCLUM_LABEL>-<OS_NAME>" as its label.
+EOF
+    exit 1
+}
 
 set -e
 
 if [[ ( "$#" < 2 ) ]] ; then
-    echo "${RED}error:${NC} input is invalid"
-    echo ""
-    echo "Usage:"
-    echo "    build_image.sh <occlum_name> <OS_name>"
-    echo ""
-    echo "Occlum_name:"
-    echo "    an arbitrary input (e.g., latest and 0.8.0)"
-    echo ""
-    echo "OS_name:"
-    echo "    ubuntu16.04    Build an image from ubuntu 16.04"
-    echo "    centos7.2      Build an image from centos 7.2"
-    echo ""
-    echo "The name of the output image will be occlum/occlum:<occlum_name>-<OS_name>."
-    exit 1
+    report_error
 fi
 
-occlum_name=$1
-OS_name=$2
+occlum_label=$1
+os_name=$2
 
-if [ "$OS_name" != "ubuntu16.04" ] && [ "$OS_name" != "centos7.2" ];then
-    echo "${RED}error:${NC} no such OS_name: '$OS_name'"
-    echo "OS_name:"
-    echo "    ubuntu16.04    Build an image from ubuntu 16.04"
-    echo "    centos7.2      Build an image from centos 7.2"
-    exit 1
+if [ "$os_name" != "ubuntu16.04" ] && [ "$os_name" != "centos7.2" ];then
+    report_error
 fi
 
 cd "$script_dir/.."
-docker build -f "$script_dir/Dockerfile.$OS_name" -t occlum/occlum:$occlum_name-$OS_name .
+docker build -f "$script_dir/Dockerfile.$os_name" -t "occlum/occlum:$occlum_label-$os_name" .
