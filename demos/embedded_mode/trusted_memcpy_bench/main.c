@@ -62,20 +62,30 @@ int main(int argc, char* argv[]) {
     }
 
     // Benchmark memcpy from outside the enclave to inside the enclave
-    struct timeval time_begin, time_end;
     printf("Start copying data from the given buffer (ptr = %p, len = %lu) for a total of %lu bytes...\n",
             buf_ptr, buf_size, total_bytes);
+
+    // Time begin
+    struct timeval time_begin, time_end;
     gettimeofday(&time_begin, NULL);
+    // Do memcpy for a total of `total_bytes` bytes
     int ret = copy_into_enclave(buf_ptr, buf_size, total_bytes);
     if (ret < 0) {
         return EXIT_FAILURE;
     }
+    // Time end
     gettimeofday(&time_end, NULL);
     printf("Done.\n");
 
+    // Calculate the throughput
     unsigned long elapsed_us = (time_end.tv_sec - time_begin.tv_sec) * 1000000
                              + (time_end.tv_usec - time_begin.tv_usec);
-    printf("Cross-enclave memcpy throughput = %lu MB/s\n", total_bytes / (elapsed_us + 1));
+    if (elapsed_us == 0) {
+        fprintf(stderr, "ERROR: elapsed time (in us) cannot be zero");
+        print_help_msg(prog_name);
+        return EXIT_FAILURE;
+    }
+    printf("Cross-enclave memcpy throughput = %lu MB/s\n", total_bytes / elapsed_us);
 
     return EXIT_SUCCESS;
 }

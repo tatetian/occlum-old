@@ -3,8 +3,12 @@
 #include <stdlib.h>
 #include <occlum_pal_api.h>
 
+//============================================================================
+// Help message
+//============================================================================
+
 #define HELP_MSG                                                                    \
-    "%s\n"                                                                          \
+    "%b\n"                                                                          \
     "A benchmark program that measures the memory throughput across the enclave.\n" \
     "\n"                                                                            \
     "Usage:\n"                                                                      \
@@ -16,15 +20,23 @@
     "Note:\n"                                                                       \
     "    This simple benchmark program showcases the power of the embedded mode of Occlum, " \
     "which enables sharing memory between the inside and outside of an enclave."    \
-    "This, in turn, makes it possible to build Occlum-based SGX apps "              \
-    "that comprises of trusted and untrused halves.\n"
+    "The embedded mode makes it possible to build Occlum-based SGX apps "           \
+    "that comprise of trusted and untrused halves.\n"
+
+static void print_help_msg(const char* prog_name) {
+    fprintf(stderr, HELP_MSG, prog_name, prog_name);
+}
+
+//============================================================================
+// Main
+//============================================================================
 
 int main(int argc, char* argv[]) {
     // Parse arguments
-    const char* prog_name = argv[0];
+    const char* prog_name = (const char*)argv[0];
     if (argc < 2) {
         fprintf(stderr, "error: require one argument\n\n");
-        fprintf(stderr, HELP_MSG, prog_name, prog_name);
+        print_help_msg(prog_name);
         return EXIT_FAILURE;
     }
     const char* total_bytes_str = argv[1];
@@ -36,7 +48,7 @@ int main(int argc, char* argv[]) {
     }
 
     // The buffer shared between the outside and inside the enclave
-    char shared_buf[1024] = {0};
+    char shared_buf[1024 * 1024] = {0};
 
     // Prepare cmd path and arguments
     const char* cmd_path = "/bin/trusted_memcpy_bench";
