@@ -14,7 +14,7 @@ build_src:
 	@$(MAKE) --no-print-directory -C trusted_memcpy_bench
 	@$(MAKE) --no-print-directory -C bench_driver
 
-TOTAL_BYTES := 1000000000 # 1GB
+TOTAL_BYTES := 10000000000 # 1GB
 test:
 	LD_LIBRARY_PATH=./.occlum/build/lib RUST_BACKTRACE=1 \
 		./bench_driver/build/bench_driver $(TOTAL_BYTES)
