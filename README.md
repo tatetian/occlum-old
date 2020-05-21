@@ -2,6 +2,8 @@
 [![All Contributors](https://img.shields.io/badge/all_contributors-7-orange.svg?style=flat-square)](CONTRIBUTORS.md)
 [![Build Status](https://travis-ci.com/occlum/occlum.svg?branch=master)](https://travis-ci.com/occlum/occlum)
 
+![Logo](docs/figures/logo.png)
+
 **NEWS:** Our paper _Occlum: Secure and Efficient Multitasking Inside a Single Enclave of Intel SGX_ has been accepted by [ASPLOS'20](https://asplos-conference.org/programs/). This research paper highlights the advantages of the single-address-space architecture adopted by Occlum and describes a novel in-enclave isolation mechanism that complements this approach. The paper can be found on [ACM Digital Library](https://dl.acm.org/doi/abs/10.1145/3373376.3378469) and [Arxiv](https://arxiv.org/abs/2001.07450).
 
 Occlum is a *memory-safe*, *multi-process* library OS (LibOS) for [Intel SGX](https://software.intel.com/en-us/sgx). As a LibOS, it enables *legacy* applications to run on SGX with *little or even no modifications* of source code, thus protecting the confidentiality and integrity of user workloads transparently.
@@ -220,6 +222,11 @@ Ultimately, whether an enclave is running in the release mode should be checked 
 Occlum is being actively developed. We now focus on implementing more system calls and additional features required in the production environment.
 
 While this project is still not mature or stable (we are halfway through reaching version 1.0.0), we have used Occlum to port many real-world applications (like Tensorflow Lite, XGBoost, GCC, Lighttpd, etc.) to SGX with little or no source code modifications. We believe that the current implementation of Occlum is already useful to many users and ready to be deployed in some use cases.
+
+## How about the Internal Working?
+
+The high-level architecture of Occlum is summarized in the figure below:
+![Arch Overview](docs/figures/arch_overview.png)
 
 ## Why the Name?
 
