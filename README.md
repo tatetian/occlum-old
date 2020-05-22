@@ -1,6 +1,6 @@
-<img src="docs/images/logo.png" alt="Occlum logo" width="400"/>
+![Occlum log](docs/images/logo.png | width=100)
 
----------
+##
 [![All Contributors](https://img.shields.io/badge/all_contributors-7-orange.svg?style=flat-square)](CONTRIBUTORS.md)
 [![Build Status](https://travis-ci.com/occlum/occlum.svg?branch=master)](https://travis-ci.com/occlum/occlum)
 
@@ -226,7 +226,8 @@ While this project is still not mature or stable (we are halfway through reachin
 ## How about the Internal Working?
 
 The high-level architecture of Occlum is summarized in the figure below:
-![Arch Overview](docs/figures/arch_overview.png)
+
+![Arch Overview](docs/images/arch_overview.png)
 
 ## Why the Name?
 
