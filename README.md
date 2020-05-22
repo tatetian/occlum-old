@@ -1,5 +1,4 @@
-![Occlum log](docs/images/logo.png | width=100)
-
+![Occlum logo](docs/images/logo.png)
 ##
 [![All Contributors](https://img.shields.io/badge/all_contributors-7-orange.svg?style=flat-square)](CONTRIBUTORS.md)
 [![Build Status](https://travis-ci.com/occlum/occlum.svg?branch=master)](https://travis-ci.com/occlum/occlum)
