@@ -6,6 +6,7 @@ use super::user_space_vm::{UserSpaceVMManager, UserSpaceVMRange, USER_SPACE_VM_M
 use super::vm_manager::{
     VMInitializer, VMManager, VMMapAddr, VMMapOptions, VMMapOptionsBuilder, VMRemapOptions,
 };
+use super::vm_perms::VMPerms;
 
 #[derive(Debug)]
 pub struct ProcessVMBuilder<'a, 'b> {
@@ -313,6 +314,7 @@ impl ProcessVM {
         let mmap_options = VMMapOptionsBuilder::default()
             .size(size)
             .addr(addr_option)
+            .perms(perms)
             .initializer(initializer)
             .build()?;
         let mmap_addr = self.mmap_manager.mmap(&mmap_options)?;
@@ -409,32 +411,6 @@ impl MRemapFlags {
 impl Default for MRemapFlags {
     fn default() -> Self {
         MRemapFlags::None
-    }
-}
-
-bitflags! {
-    pub struct VMPerms : u32 {
-        const READ        = 0x1;
-        const WRITE       = 0x2;
-        const EXEC        = 0x4;
-    }
-}
-
-impl VMPerms {
-    pub fn can_read(&self) -> bool {
-        self.contains(VMPerms::READ)
-    }
-
-    pub fn can_write(&self) -> bool {
-        self.contains(VMPerms::WRITE)
-    }
-
-    pub fn can_execute(&self) -> bool {
-        self.contains(VMPerms::EXEC)
-    }
-
-    pub fn from_u32(bits: u32) -> Result<VMPerms> {
-        VMPerms::from_bits(bits).ok_or_else(|| errno!(EINVAL, "unknown permission bits"))
     }
 }
 
