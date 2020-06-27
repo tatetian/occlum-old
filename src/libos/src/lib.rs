@@ -57,6 +57,7 @@ mod config;
 mod entry;
 mod exception;
 mod fs;
+mod interrupt;
 mod misc;
 mod net;
 mod process;
