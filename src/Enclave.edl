@@ -82,7 +82,7 @@ enclave {
 
 
         /*
-         * Broadcast interrupts to multiple LibOS threads.
+         * Broadcast interrupts to LibOS threads.
          *
          * Interrupts are sent to whichever LibOS threads that have pending
          * events (e.g., signals). By interrupting the execution of these 
@@ -90,7 +90,7 @@ enclave {
          * of the specific user workloads.
          *
          * @retval On success, return a non-negative value, which is the number
-         * of LibOS threads to which interrupts are sent. ON error, return 
+         * of LibOS threads to which interrupts are sent. On error, return 
          * -errno.
          *
          * The possible values of errno are
@@ -199,5 +199,7 @@ enclave {
             [in, out, size=len] void *arg,
             size_t len
         ) propagate_errno;
+
+        int occlum_ocall_tkill(int tid, int signum) propagate_errno;
     };
 };

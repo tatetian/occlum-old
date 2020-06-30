@@ -136,6 +136,8 @@ int pal_destroy_enclave(void) {
     // sgx_destory_enclave call. We need to implement exit_group syscall and
     // handle signal and exceptions properly.
     //sgx_destroy_enclave(global_eid);
+
+    global_eid = SGX_INVALID_ENCLAVE_ID;
     return 0;
 }
 

@@ -161,7 +161,7 @@ pub extern "C" fn occlum_ecall_kill(pid: i32, sig: i32) -> i32 {
 }
 
 #[no_mangle]
-pub extern "C" fn ecall_broadcast_interrupts() -> i32 {
+pub extern "C" fn occlum_ecall_broadcast_interrupts() -> i32 {
     if HAS_INIT.load(Ordering::SeqCst) == false {
         return ecall_errno!(EAGAIN);
     }

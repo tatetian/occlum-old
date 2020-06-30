@@ -1,10 +1,14 @@
 use crate::prelude::*;
 
-mod sgx_interrupt;
+use self::sgx::sgx_interrupt_info_t;
+use crate::syscall::CpuContext;
+
+mod sgx;
+
 
 pub fn init() {
     unsafe {
-        let status = sgx_interrupt_init(handle_interrupt);
+        let status = sgx::sgx_interrupt_init(handle_interrupt);
         assert!(status == sgx_status_t::SGX_SUCCESS);
     }
 }
@@ -17,14 +21,15 @@ pub fn enable_current_thread() {
         (range.start(), range.size())
     };
     unsafe {
-        let status = sgx_interrupt_enable(addr, size);
+        let status = sgx::sgx_interrupt_enable(addr, size);
         assert!(status == sgx_status_t::SGX_SUCCESS);
     }
 }
 
 pub fn disable_current_thread() {
     unsafe {
-        sgx_interrupt_disable();
+        let status = sgx::sgx_interrupt_disable();
+        assert!(status == sgx_status_t::SGX_SUCCESS);
     }
 }
 
@@ -49,20 +54,37 @@ pub fn do_handle_interrupt(
 }
 
 pub fn broadcast_interrupts() -> Result<usize> {
-    for thread in process::table::get_all_threads() {
-        // TODO: sig_mask should be combined into sig_queues to avoid false positive
-        if thread.process().is_forced_exit()
-            || !thread.sig_queues().is_empty()
-            || !thread.process().sig_queues().is_empty()
-        {
-            let host_tid = match thread.host_tid() {
-				None => continue;
-				Some(host_tid) => host_tid,
-			};
+    let should_interrupt_thread = |thread: &ThreadRef| -> bool {
+        // TODO: check Thread::sig_mask to avoid false positives
+        thread.process().is_forced_to_exit()
+            || !thread.sig_queues().lock().unwrap().empty()
+            || !thread.process().sig_queues().lock().unwrap().empty()
+    };
 
-            let host_tid = thread.host_tid();
-            let signum = 64;
-            ocall_signal(host_tid, signum);
-        }
-    }
+    let num_broadcast_threads = crate::process::table::get_all_threads()
+        .iter()
+        .filter(should_interrupt_thread)
+        .map(|thread| {
+            let host_tid = {
+                let sched = thread.sched().lock().unwrap();
+                match thread.host_tid() {
+                    None => return 0;
+                    Some(host_tid) => host_tid,
+                }
+            };
+            const signum = 64; // real-time signal 64 is used to notify interrupts
+            unsafe {
+                let mut retval = 0;
+                let status = occlum_ocall_tkill(&mut retval, host_tid, signum);
+                assert!(status == sgx_status_t::SGX_SUCCESS);
+                if retval ==  0 {
+                    1 // increase the success counter
+                } else {
+                    warn!("occlum_ocall_tkill failed: errno = {:?}", libc::errno());
+                    0 // do not increase
+                }
+            } as usize
+        })
+        .sum();
+    Ok(num_broadcast_threads)
 }
