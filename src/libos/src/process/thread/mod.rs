@@ -6,6 +6,7 @@ use super::{
     FileTableRef, ForcedExitStatus, FsViewRef, ProcessRef, ProcessVM, ProcessVMRef,
     ResourceLimitsRef, SchedAgentRef, TermStatus, ThreadRef,
 };
+use crate::events::HostEventFd;
 use crate::fs::{EventCreationFlags, EventFile};
 use crate::net::THREAD_NOTIFIERS;
 use crate::prelude::*;

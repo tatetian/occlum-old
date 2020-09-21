@@ -64,6 +64,7 @@ mod error;
 
 mod config;
 mod entry;
+mod events;
 mod exception;
 mod fs;
 mod interrupt;

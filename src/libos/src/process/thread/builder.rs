@@ -4,6 +4,7 @@ use super::{
     FileTableRef, FsViewRef, ProcessRef, ProcessVM, ProcessVMRef, ResourceLimitsRef, SchedAgentRef,
     SigQueues, SigSet, Task, Thread, ThreadId, ThreadInner, ThreadName, ThreadRef,
 };
+use crate::events::HostEventFd;
 use crate::prelude::*;
 use crate::time::ThreadProfiler;
 
